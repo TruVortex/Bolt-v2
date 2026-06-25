@@ -8,7 +8,7 @@ app_port: 7860
 pinned: false
 ---
 
-# Bolt-v2
+# [Bolt-v2](https://huggingface.co/spaces/TruVortex/Bolt)
 
 A reimagination of [a previous project](https://github.com/MSS-Goats/Bolt), Bolt is a web-based app that analyzes running form using computer vision and multi-task deep learning. The engine processes uploaded side-profile video, isolates exactly one complete running stride of the prominent leg, and provides feedback.
 
