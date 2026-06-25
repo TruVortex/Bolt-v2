@@ -1,11 +1,19 @@
 import os
+import sys
+import webbrowser
+from threading import Timer
 
 from flask import Flask, render_template, request, jsonify
-from werkzeug.utils import secure_filename
 
 from analyzer import RunningAnalyzer
 
-app = Flask(__name__)
+if getattr(sys, 'frozen', False):
+    template_folder = os.path.join(sys._MEIPASS, 'templates')
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+else:
+    app = Flask(__name__)
+
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi'}
@@ -29,7 +37,7 @@ def analyze():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
+        filename = "temp_gait_video.mp4"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         try:
@@ -44,7 +52,22 @@ def analyze():
     return jsonify({"error": "Invalid file extension. Please upload MP4, MOV, or AVI."}), 400
 
 
+def open_browser(port_number):
+    """Launches the user's default browser on the active local port."""
+    webbrowser.open(f"http://127.0.0.1:{port_number}")
+
+
 if __name__ == '__main__':
+    is_frozen = getattr(sys, 'frozen', False)
+    is_huggingface = 'SPACE_ID' in os.environ or 'PORT' in os.environ
+    if is_huggingface:
+        default_port = 7860
+    else:
+        default_port = 5000
+    port = int(os.environ.get('PORT', default_port))
     debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    port = int(os.environ.get('PORT', 7860))
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    if is_frozen:
+        Timer(1.5, lambda: open_browser(port)).start()
+        app.run(host='127.0.0.1', port=port, debug=False)
+    else:
+        app.run(host='0.0.0.0', port=port, debug=debug_mode)

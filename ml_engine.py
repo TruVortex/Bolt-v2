@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 import torch
@@ -41,7 +42,11 @@ class GaitNN(nn.Module):
 
 class BoltML:
     def __init__(self, model_path="gait_biomechanics_net.pth"):
-        self.model_path = model_path
+        if getattr(sys, 'frozen', False):
+            base_dir = sys._MEIPASS
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.model_path = os.path.join(base_dir, model_path)
         self.model = GaitNN()
         self.means = np.array([5.0, 140.0, 95.0, 0.15])
         self.stds = np.array([3.0, 10.0, 15.0, 0.15])
