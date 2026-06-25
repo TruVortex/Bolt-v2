@@ -176,7 +176,7 @@ class RunningAnalyzer:
 
         analysis_payload = []
         phases = [
-            "Initial Contact (Heel Strike)",
+            "Initial Contact (Foot Strike)",
             "Loading Response (Weight Shift)",
             "Mid-Stance (Max Support)",
             "Terminal Stance (Push-Off)",
