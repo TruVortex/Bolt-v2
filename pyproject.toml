@@ -1,0 +1,12 @@
+[project]
+name = "bolt-v2"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "flask==3.0.3",
+    "mediapipe==0.10.21",
+    "numpy==1.26.4",
+    "opencv-python-headless==4.10.0.84",
+    "torch>=2.6.0",
+    "werkzeug==3.0.6",
+]

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .flat-btn {
+            background-color: #1e1e1e;
+            border: 1px solid #333333;
+            color: #ffffff;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .flat-btn:hover {
+            background-color: #facc15;
+            color: #121212;
+            border-color: #facc15;
+        }
+
+        .active-toggle {
+            background-color: #facc15 !important;
+            color: #121212 !important;
+            border-color: #facc15 !important;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: #2e2e2e;
+            height: 6px;
+            border-radius: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #facc15;
+            cursor: pointer;
+            border-radius: 0;
+        }
+    </style>
+</head>
+<body class="overflow-hidden h-screen w-screen font-mono">
+
+<div class="grid grid-cols-1 lg:grid-cols-12 h-full w-full">
+    <div class="lg:col-span-7 h-full bg-[#0d0d0d] flex flex-col justify-between border-r border-[#222222] relative">
+
+        <div class="p-4 bg-[#121212] border-b border-[#222222] flex justify-between items-center z-10">
+            <span class="text-xs uppercase tracking-widest text-[#888888]">Vector Reconstruction</span>
+            <span id="gait-side-tag" class="text-xs text-yellow-400 uppercase font-bold"></span>
+        </div>
+
+        <div id="canvas-container" class="flex-grow w-full relative flex items-center justify-center overflow-hidden">
+            <canvas id="pose-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+
+            <div id="canvas-placeholder" class="text-center z-10 px-6">
+                <p class="text-sm uppercase text-[#666666] tracking-widest">Gait Data Unavailable</p>
+                <p class="text-xs text-[#444444] mt-2">Upload profile video in the control deck to create vector
+                    maps.</p>
+            </div>
+        </div>
+
+        <div class="p-6 bg-[#121212] border-t border-[#222222] z-10">
+            <div class="flex items-center justify-between mb-2">
+                <span id="phase-title" class="text-xs uppercase tracking-widest text-yellow-400 font-bold">--</span>
+                <span id="frame-counter" class="text-xs text-[#888888]">Frame: 0 / 8</span>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <input type="range" id="frame-slider" min="0" max="7" value="0"
+                           class="w-full rounded-none pointer-events-none" disabled>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2">
+                    <button id="prev-btn" class="py-2.5 flat-btn text-xs uppercase font-bold rounded-none">Prev</button>
+                    <button id="play-btn" class="py-2.5 flat-btn text-xs uppercase font-bold rounded-none">Play
+                    </button>
+                    <button id="overlay-btn" class="py-2.5 flat-btn text-xs uppercase font-bold rounded-none">Overlay
+                        Off
+                    </button>
+                    <button id="next-btn" class="py-2.5 flat-btn text-xs uppercase font-bold rounded-none">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-5 h-full bg-[#121212] flex flex-col justify-between overflow-y-auto">
+        <div class="p-8 space-y-2 flex-grow">
+            <div class="pb-2">
+                <h1 class="text-3xl font-black tracking-tight text-white uppercase">Bolt</h1>
+                <p class="text-[10px] text-[#666666] uppercase mt-1 tracking-widest">Biomechanics
+                    Analysis</p>
+            </div>
+
+            <div id="upload-panel" class="border border-dashed border-[#333333] p-6 bg-[#181818] text-center">
+                <form id="upload-form" class="space-y-4">
+                    <input type="file" id="video-input" accept="video/*" class="hidden" required>
+                    <label for="video-input"
+                           class="cursor-pointer block p-4 border border-[#222222] bg-[#1e1e1e] hover:bg-[#252525] text-xs text-[#888888] uppercase tracking-wider">
+                        Select Video File
+                    </label>
+                    <div id="file-name" class="text-xs text-yellow-400 hidden font-bold"></div>
+                    <button type="submit"
+                            class="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xs uppercase py-3 px-6 rounded-none transition duration-150">
+                        Analyze Gait
+                    </button>
+                </form>
+            </div>
+
+            <div id="processing-indicator" class="hidden border border-yellow-400/20 bg-yellow-400/5 p-4 text-center">
+                <span class="inline-block border-2 border-yellow-400 border-t-transparent animate-spin w-4 h-4 mr-2 align-middle"></span>
+                <span class="text-xs uppercase text-yellow-400 font-bold tracking-widest">Mapping Skeletal Geometry...</span>
+            </div>
+
+            <div id="metrics-panel" class="hidden space-y-8">
+                <div>
+                    <h2 class="text-xs uppercase tracking-widest text-[#888888] mb-4 border-b border-[#222222] pb-1">
+                        Dynamic Metrics</h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-[#181818] border border-[#222222] p-4">
+                            <span class="text-[10px] text-[#666666] uppercase block">Torso Lean</span>
+                            <div class="text-xl font-bold mt-1 text-white"><span id="torso-val">--</span>°</div>
+                        </div>
+                        <div class="bg-[#181818] border border-[#222222] p-4">
+                            <span class="text-[10px] text-[#666666] uppercase block">Knee Angle</span>
+                            <div class="text-xl font-bold mt-1 text-white"><span id="knee-val">--</span>°</div>
+                        </div>
+                        <div class="bg-[#181818] border border-[#222222] p-4">
+                            <span class="text-[10px] text-[#666666] uppercase block">Elbow Angle</span>
+                            <div class="text-xl font-bold mt-1 text-white"><span id="elbow-val">--</span>°</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xs uppercase tracking-widest text-[#888888] mb-4 border-b border-[#222222] pb-1">
+                        Form Suggestions</h2>
+                    <ul id="advice-list" class="space-y-3 text-xs leading-relaxed">
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="reset-panel"
+             class="hidden p-6 border-t border-[#222222] bg-[#161616] flex justify-between items-center">
+            <button id="reset-btn"
+                    class="text-xs uppercase text-[#888888] hover:text-white underline underline-offset-4 decoration-yellow-400 font-bold">
+                Clear Current Model
+            </button>
+            <span class="text-[9px] text-[#555555]">VIDEO LOADED</span>
+        </div>
+    </div>
+</div>
+
+<!-- Frontend Interactive Application Engine -->
+<script>
+    const uploadPanel = document.getElementById('upload-panel');
+    const processingIndicator = document.getElementById('processing-indicator');
+    const metricsPanel = document.getElementById('metrics-panel');
+    const resetPanel = document.getElementById('reset-panel');
+    const canvasPlaceholder = document.getElementById('canvas-placeholder');
+
+    const uploadForm = document.getElementById('upload-form');
+    const videoInput = document.getElementById('video-input');
+    const fileNameDiv = document.getElementById('file-name');
+
+    const canvas = document.getElementById('pose-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const frameSlider = document.getElementById('frame-slider');
+    const frameCounter = document.getElementById('frame-counter');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const playBtn = document.getElementById('play-btn');
+    const overlayBtn = document.getElementById('overlay-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const phaseTitle = document.getElementById('phase-title');
+    const torsoVal = document.getElementById('torso-val');
+    const kneeVal = document.getElementById('knee-val');
+    const elbowVal = document.getElementById('elbow-val');
+    const adviceList = document.getElementById('advice-list');
+    const gaitSideTag = document.getElementById('gait-side-tag');
+
+    let gaitData = null;
+    let activeFrameIndex = 0;
+
+    let localVideoElement = null;
+    let overlayEnabled = false;
+    let isSeekingVideo = false;
+
+    let slowMoPlaying = false;
+    let slowMoIntervalId = null;
+
+    function resizeCanvas() {
+        const container = canvas.parentNode;
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        if (gaitData) drawFrame(activeFrameIndex);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    videoInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            fileNameDiv.innerText = file.name.toUpperCase();
+            fileNameDiv.classList.remove('hidden');
+
+            if (localVideoElement) {
+                URL.revokeObjectURL(localVideoElement.src);
+            }
+            localVideoElement = document.createElement('video');
+            localVideoElement.src = URL.createObjectURL(file);
+            localVideoElement.muted = true;
+            localVideoElement.playsInline = true;
+            localVideoElement.load();
+
+            localVideoElement.addEventListener('seeked', () => {
+                isSeekingVideo = false;
+                if (gaitData) {
+                    drawFrame(activeFrameIndex);
+                }
+            });
+        }
+    });
+
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = videoInput.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('video', file);
+
+        uploadPanel.classList.add('hidden');
+        processingIndicator.classList.remove('hidden');
+        canvasPlaceholder.classList.add('hidden');
+
+        try {
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorMsg = await response.json();
+                throw new Error(errorMsg.error || "Gait compile error.");
+            }
+
+            gaitData = await response.json();
+
+            processingIndicator.classList.add('hidden');
+            metricsPanel.classList.remove('hidden');
+            resetPanel.classList.remove('hidden');
+
+            // --- DYNAMIC SLIDER BOUNDS CONFIGURATION ---
+            frameSlider.max = gaitData.frames.length - 1;
+            frameSlider.removeAttribute('disabled');
+            frameSlider.classList.remove('pointer-events-none');
+
+            gaitSideTag.innerText = `PROMINENT VIEW: ${gaitData.side}`;
+            activeFrameIndex = 0;
+            frameSlider.value = 0;
+
+            resizeCanvas();
+            updateUI();
+
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+            processingIndicator.classList.add('hidden');
+            uploadPanel.classList.remove('hidden');
+            canvasPlaceholder.classList.remove('hidden');
+        }
+    });
+
+    const armBones = [
+        ['shoulder', 'elbow'],
+        ['elbow', 'wrist']
+    ];
+    const legBones = [
+        ['hip', 'knee'],
+        ['knee', 'ankle'],
+        ['ankle', 'heel'],
+        ['ankle', 'toe']
+    ];
+
+    function getAspectScaleParams() {
+        const vWidth = gaitData.video_metadata.width;
+        const vHeight = gaitData.video_metadata.height;
+        const vAspectRatio = vWidth / vHeight;
+        const cAspectRatio = canvas.width / canvas.height;
+
+        let drawWidth, drawHeight, offsetX, offsetY;
+
+        if (vAspectRatio > cAspectRatio) {
+            drawWidth = canvas.width;
+            drawHeight = canvas.width / vAspectRatio;
+            offsetX = 0;
+            offsetY = (canvas.height - drawHeight) / 2;
+        } else {
+            drawHeight = canvas.height;
+            drawWidth = canvas.height * vAspectRatio;
+            offsetX = (canvas.width - drawWidth) / 2;
+            offsetY = 0;
+        }
+
+        return {drawWidth, drawHeight, offsetX, offsetY};
+    }
+
+    function drawFrame(frameIdx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const frame = gaitData.frames[frameIdx];
+        const landmarks = frame.landmarks;
+        const scaleParams = getAspectScaleParams();
+
+        if (overlayEnabled && localVideoElement && localVideoElement.readyState >= 2) {
+            ctx.drawImage(
+                localVideoElement,
+                scaleParams.offsetX,
+                scaleParams.offsetY,
+                scaleParams.drawWidth,
+                scaleParams.drawHeight
+            );
+        }
+
+        function transform(pt) {
+            return [
+                pt[0] * scaleParams.drawWidth + scaleParams.offsetX,
+                pt[1] * scaleParams.drawHeight + scaleParams.offsetY
+            ];
+        }
+
+        const activeSide = gaitData.side;
+        const backgroundPrefix = activeSide === 'left' ? 'r_' : 'l_';
+        const foregroundPrefix = activeSide === 'left' ? 'l_' : 'r_';
+
+        const shL = transform(landmarks['l_shoulder']);
+        const shR = transform(landmarks['r_shoulder']);
+        const hipL = transform(landmarks['l_hip']);
+        const hipR = transform(landmarks['r_hip']);
+        const nose = transform(landmarks['nose']);
+
+        const midShoulder = [(shL[0] + shR[0]) / 2, (shL[1] + shR[1]) / 2];
+        const midHip = [(hipL[0] + hipR[0]) / 2, (hipL[1] + hipR[1]) / 2];
+
+        // Spine
+        ctx.strokeStyle = overlayEnabled ? 'rgba(255,255,255,0.4)' : '#333333';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(midShoulder[0], midShoulder[1]);
+        ctx.lineTo(midHip[0], midHip[1]);
+        ctx.stroke();
+
+        // Neck
+        ctx.beginPath();
+        ctx.moveTo(midShoulder[0], midShoulder[1]);
+        ctx.lineTo(nose[0], nose[1]);
+        ctx.stroke();
+
+        // Head
+        ctx.fillStyle = overlayEnabled ? 'rgba(30, 30, 30, 0.4)' : '#1e1e1e';
+        ctx.strokeStyle = overlayEnabled ? '#ffffff' : '#888888';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(nose[0], nose[1] - 15, 22, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cross bars
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(shL[0], shL[1]);
+        ctx.lineTo(shR[0], shR[1]);
+        ctx.moveTo(hipL[0], hipL[1]);
+        ctx.lineTo(hipR[0], hipR[1]);
+        ctx.stroke();
+
+        // 1. Draw Background
+        ctx.strokeStyle = overlayEnabled ? 'rgba(255, 255, 255, 0.3)' : '#555555';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 6]);
+
+        armBones.forEach(([jointA, jointB]) => {
+            const ptA = transform(landmarks[backgroundPrefix + jointA]);
+            const ptB = transform(landmarks[backgroundPrefix + jointB]);
+            ctx.beginPath();
+            ctx.moveTo(ptA[0], ptA[1]);
+            ctx.lineTo(ptB[0], ptB[1]);
+            ctx.stroke();
+        });
+
+        legBones.forEach(([jointA, jointB]) => {
+            const ptA = transform(landmarks[backgroundPrefix + jointA]);
+            const ptB = transform(landmarks[backgroundPrefix + jointB]);
+            ctx.beginPath();
+            ctx.moveTo(ptA[0], ptA[1]);
+            ctx.lineTo(ptB[0], ptB[1]);
+            ctx.stroke();
+        });
+
+        // 2. Draw Foreground
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 6;
+        ctx.setLineDash([]);
+
+        armBones.forEach(([jointA, jointB]) => {
+            const ptA = transform(landmarks[foregroundPrefix + jointA]);
+            const ptB = transform(landmarks[foregroundPrefix + jointB]);
+            ctx.beginPath();
+            ctx.moveTo(ptA[0], ptA[1]);
+            ctx.lineTo(ptB[0], ptB[1]);
+            ctx.stroke();
+        });
+
+        legBones.forEach(([jointA, jointB]) => {
+            const ptA = transform(landmarks[foregroundPrefix + jointA]);
+            const ptB = transform(landmarks[foregroundPrefix + jointB]);
+            ctx.beginPath();
+            ctx.moveTo(ptA[0], ptA[1]);
+            ctx.lineTo(ptB[0], ptB[1]);
+            ctx.stroke();
+        });
+
+        ctx.fillStyle = '#ffffff';
+        Object.keys(landmarks).forEach(key => {
+            const [cx, cy] = transform(landmarks[key]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+    }
+
+    function updateUI() {
+        if (!gaitData) return;
+        const frame = gaitData.frames[activeFrameIndex];
+
+        phaseTitle.innerText = frame.phase_name;
+        torsoVal.innerText = frame.torso_angle;
+        kneeVal.innerText = frame.knee_angle;
+        elbowVal.innerText = frame.elbow_angle;
+
+        frameCounter.innerText = `FRAME: ${activeFrameIndex + 1} / ${gaitData.frames.length}`;
+
+        adviceList.innerHTML = '';
+        frame.advice.forEach(bullet => {
+            const item = document.createElement('li');
+            item.className = "p-3 border-l-4 bg-[#181818] tracking-normal";
+
+            if (bullet.level === "CRITICAL") {
+                item.classList.add("border-red-600", "text-red-400");
+                item.innerHTML = `<span class="font-bold text-red-600 block text-[9px] uppercase tracking-widest mb-1">[BIOMECHANICAL FAULT]</span>${bullet.text}`;
+            } else if (bullet.level === "WARNING") {
+                item.classList.add("border-yellow-500", "text-yellow-100");
+                item.innerHTML = `<span class="font-bold text-yellow-500 block text-[9px] uppercase tracking-widest mb-1">[POSITIONAL WARNING]</span>${bullet.text}`;
+            } else {
+                item.classList.add("border-[#333333]", "text-[#888888]");
+                item.innerHTML = `<span class="font-bold text-gray-400 block text-[9px] uppercase tracking-widest mb-1">[FUNCTIONAL AFFIRMATION]</span>${bullet.text}`;
+            }
+            adviceList.appendChild(item);
+        });
+
+        if (overlayEnabled && localVideoElement && !isSeekingVideo) {
+            isSeekingVideo = true;
+            localVideoElement.currentTime = frame.timestamp;
+        } else {
+            drawFrame(activeFrameIndex);
+        }
+    }
+
+    // --- DYNAMIC PROGRESSION WRAPS ---
+    function stepNextFrame() {
+        if (!gaitData) return;
+        const len = gaitData.frames.length;
+        activeFrameIndex = (activeFrameIndex + 1) % len;
+        frameSlider.value = activeFrameIndex;
+        updateUI();
+    }
+
+    function stepPrevFrame() {
+        if (!gaitData) return;
+        const len = gaitData.frames.length;
+        activeFrameIndex = (activeFrameIndex - 1 + len) % len;
+        frameSlider.value = activeFrameIndex;
+        updateUI();
+    }
+
+    prevBtn.addEventListener('click', stepPrevFrame);
+    nextBtn.addEventListener('click', stepNextFrame);
+
+    frameSlider.addEventListener('input', (e) => {
+        activeFrameIndex = parseInt(e.target.value);
+        updateUI();
+    });
+
+    playBtn.addEventListener('click', () => {
+        if (!gaitData) return;
+
+        if (slowMoPlaying) {
+            clearInterval(slowMoIntervalId);
+            slowMoPlaying = false;
+            playBtn.classList.remove('active-toggle');
+            playBtn.innerText = "Slow-Mo";
+        } else {
+            slowMoPlaying = true;
+            playBtn.classList.add('active-toggle');
+            playBtn.innerText = "Pause";
+            slowMoIntervalId = setInterval(stepNextFrame, 250);
+        }
+    });
+
+    overlayBtn.addEventListener('click', () => {
+        if (!gaitData || !localVideoElement) return;
+
+        overlayEnabled = !overlayEnabled;
+        if (overlayEnabled) {
+            overlayBtn.classList.add('active-toggle');
+            overlayBtn.innerText = "Overlay On";
+        } else {
+            overlayBtn.classList.remove('active-toggle');
+            overlayBtn.innerText = "Overlay Off";
+        }
+        updateUI();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if (slowMoPlaying) {
+            clearInterval(slowMoIntervalId);
+            slowMoPlaying = false;
+            playBtn.classList.remove('active-toggle');
+            playBtn.innerText = "Slow-Mo";
+        }
+
+        overlayEnabled = false;
+        overlayBtn.classList.remove('active-toggle');
+        overlayBtn.innerText = "Overlay Off";
+
+        metricsPanel.classList.add('hidden');
+        resetPanel.classList.add('hidden');
+        uploadPanel.classList.remove('hidden');
+        canvasPlaceholder.classList.remove('hidden');
+
+        videoInput.value = '';
+        fileNameDiv.classList.add('hidden');
+        frameSlider.setAttribute('disabled', 'true');
+        frameSlider.classList.add('pointer-events-none');
+
+        gaitData = null;
+
+        if (localVideoElement) {
+            URL.revokeObjectURL(localVideoElement.src);
+            localVideoElement = null;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+</script>
+</body>
+</html>
