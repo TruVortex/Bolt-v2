@@ -180,7 +180,7 @@ class RunningAnalyzer:
             "Loading Response (Weight Shift)",
             "Mid-Stance (Max Support)",
             "Terminal Stance (Push-Off)",
-            "Toe-Off (Propulsion)",
+            "Leg Extension (Propulsion)",
             "Initial Swing (Leg Drive)",
             "Terminal Swing (Preparation)",
             "Next Initial Contact"

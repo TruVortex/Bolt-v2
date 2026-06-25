@@ -51,16 +51,16 @@ In cases where a video has slow-motion segments, variable frame rates, or frame 
 
 The engine segments and evaluates the prominent leg through 8 distinct, phases:
 
-| Phase        | Phase Label              | Biomechanical Target Evaluated |
-|:-------------|:-------------------------| :--- |
-| **1 (0%)**   | **Initial Contact**      | Heel Strike overstride ratio relative to pelvic center |
-| **2 (14%)**  | **Loading Response**     | Control and soft cushion of landing knee flexion |
-| **3 (28%)**  | **Mid-Stance**           | Weight-bearing support-knee flexion (shock absorption) |
-| **4 (43%)**  | **Terminal Stance**      | Pelvic and torso posture alignment under peak load |
-| **5 (57%)**  | **Toe-Off**              | Kinetic leg extension and ankle push-off drive |
-| **6 (71%)**  | **Initial Swing**        | Swing-phase heel recovery and knee drive height |
-| **7 (85%)**  | **Terminal Swing**       | Active hamstring deceleration preparing for contact |
-| **8 (100%)** | **Next Initial Contact** | Stride completion boundary verification |
+| Phase        | Phase Label              | Biomechanical Target Evaluated                         |
+|:-------------|:-------------------------|:-------------------------------------------------------|
+| **1 (0%)**   | **Initial Contact**      | Foot strike overstride ratio relative to pelvic center |
+| **2 (14%)**  | **Loading Response**     | Control and soft cushion of landing knee flexion       |
+| **3 (28%)**  | **Mid-Stance**           | Weight-bearing support-knee flexion                    |
+| **4 (43%)**  | **Terminal Stance**      | Pelvic and torso posture alignment under peak load     |
+| **5 (57%)**  | **Leg Extension**        | Leg extension and ankle push-off                       |
+| **6 (71%)**  | **Initial Swing**        | Heel recovery and knee drive height                    |
+| **7 (85%)**  | **Terminal Swing**       | Hamstring deceleration in preparation for contact      |
+| **8 (100%)** | **Next Initial Contact** | Stride cycle completion                                |
 
 ---
 
