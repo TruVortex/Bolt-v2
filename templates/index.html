@@ -261,7 +261,6 @@
             metricsPanel.classList.remove('hidden');
             resetPanel.classList.remove('hidden');
 
-            // --- DYNAMIC SLIDER BOUNDS CONFIGURATION ---
             frameSlider.max = gaitData.frames.length - 1;
             frameSlider.removeAttribute('disabled');
             frameSlider.classList.remove('pointer-events-none');
@@ -351,7 +350,6 @@
         const midShoulder = [(shL[0] + shR[0]) / 2, (shL[1] + shR[1]) / 2];
         const midHip = [(hipL[0] + hipR[0]) / 2, (hipL[1] + hipR[1]) / 2];
 
-        // Spine
         ctx.strokeStyle = overlayEnabled ? 'rgba(255,255,255,0.4)' : '#333333';
         ctx.lineWidth = 6;
         ctx.beginPath();
@@ -359,13 +357,11 @@
         ctx.lineTo(midHip[0], midHip[1]);
         ctx.stroke();
 
-        // Neck
         ctx.beginPath();
         ctx.moveTo(midShoulder[0], midShoulder[1]);
         ctx.lineTo(nose[0], nose[1]);
         ctx.stroke();
 
-        // Head
         ctx.fillStyle = overlayEnabled ? 'rgba(30, 30, 30, 0.4)' : '#1e1e1e';
         ctx.strokeStyle = overlayEnabled ? '#ffffff' : '#888888';
         ctx.lineWidth = 2;
@@ -374,7 +370,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Cross bars
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(shL[0], shL[1]);
@@ -383,7 +378,6 @@
         ctx.lineTo(hipR[0], hipR[1]);
         ctx.stroke();
 
-        // 1. Draw Background
         ctx.strokeStyle = overlayEnabled ? 'rgba(255, 255, 255, 0.3)' : '#555555';
         ctx.lineWidth = 3;
         ctx.setLineDash([6, 6]);
@@ -406,7 +400,6 @@
             ctx.stroke();
         });
 
-        // 2. Draw Foreground
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 6;
         ctx.setLineDash([]);
@@ -475,7 +468,6 @@
         }
     }
 
-    // --- DYNAMIC PROGRESSION WRAPS ---
     function stepNextFrame() {
         if (!gaitData) return;
         const len = gaitData.frames.length;
